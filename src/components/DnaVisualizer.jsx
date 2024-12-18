@@ -123,7 +123,6 @@ const DnaVisualizer = () => {
                             filter: selected ? 'brightness(0.9)' : isHighlighted ? 'brightness(0.95)' : 'none'
                         }),
                     padding: colorMode === 'background' ? '0 2px' : '0 1px',
-                    padding: '0 1px',
                     cursor: 'pointer',
                     userSelect: 'none'
                 }}
