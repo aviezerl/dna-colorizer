@@ -3,6 +3,10 @@ import { Dna } from 'lucide-react';
 
 const DnaVisualizer = () => {
     const [sequence, setSequence] = useState(`TCCGTTACCTTGTTGCTGAGCNGGNCNTTTT\nTCCGTTACCATGTTGCTGAGCNGGNCNTA\nACCNTTACCATGTTGCTGAGCNGGNCNTTTT`);
+    const [cursorPosition, setCursorPosition] = useState({ line: null, column: null });
+    const [selectionStart, setSelectionStart] = useState(null);
+    const [selectionEnd, setSelectionEnd] = useState(null);
+    const [isSelecting, setIsSelecting] = useState(false);
 
     // Color mapping for each base
     const baseColors = {
@@ -11,6 +15,37 @@ const DnaVisualizer = () => {
         'G': '#FFD700', // Gold
         'C': '#4169E1', // Royal blue
         'N': '#808080', // Gray
+    };
+
+    // Function to calculate the absolute position in the sequence
+    const getAbsolutePosition = (lineIndex, columnIndex) => {
+        const lines = sequence.split('\n');
+        let position = 0;
+        for (let i = 0; i < lineIndex; i++) {
+            position += lines[i].length;
+        }
+        return position + columnIndex;
+    };
+
+    // Function to check if a position is within the current selection
+    const isPositionSelected = (lineIndex, columnIndex) => {
+        if (!selectionStart || !selectionEnd) return false;
+
+        const pos = getAbsolutePosition(lineIndex, columnIndex);
+        const startPos = getAbsolutePosition(selectionStart.line, selectionStart.column);
+        const endPos = getAbsolutePosition(selectionEnd.line, selectionEnd.column);
+
+        return pos >= Math.min(startPos, endPos) && pos <= Math.max(startPos, endPos);
+    };
+
+    // Function to count selected bases
+    const getSelectedBasesCount = () => {
+        if (!selectionStart || !selectionEnd) return 0;
+
+        const startPos = getAbsolutePosition(selectionStart.line, selectionStart.column);
+        const endPos = getAbsolutePosition(selectionEnd.line, selectionEnd.column);
+
+        return Math.abs(endPos - startPos) + 1;
     };
 
     // Legend component
@@ -33,7 +68,7 @@ const DnaVisualizer = () => {
         for (let i = 0; i <= maxLength; i += 10) {
             const markerStyle = {
                 position: 'absolute',
-                left: `${i * 0.61}em`, // Adjust based on monospace font width
+                left: `${i * 0.61}em`,
                 borderLeft: i === 0 ? 'none' : '1px solid #ddd',
             };
 
@@ -49,13 +84,42 @@ const DnaVisualizer = () => {
     };
 
     // Function to render a single base with its color
-    const renderBase = (base, index) => {
+    const renderBase = (base, lineIndex, columnIndex) => {
         const color = baseColors[base.toUpperCase()] || '#000000';
+        const isHighlighted = lineIndex === cursorPosition.line && columnIndex === cursorPosition.column;
+        const selected = isPositionSelected(lineIndex, columnIndex);
+
         return (
             <span
-                key={index}
-                style={{ color }}
-                className="font-mono"
+                key={`${lineIndex}-${columnIndex}`}
+                style={{
+                    color,
+                    background: `linear-gradient(${selected ? 'rgba(0, 0, 0, 0.2)' :
+                        isHighlighted ? 'rgba(0, 0, 0, 0.1)' :
+                            'transparent'} 45%, transparent 45%, transparent 55%, ${selected ? 'rgba(0, 0, 0, 0.2)' :
+                                isHighlighted ? 'rgba(0, 0, 0, 0.1)' :
+                                    'transparent'} 55%)`,
+                    padding: '0 1px',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                }}
+                className="font-mono transition-colors"
+                onMouseEnter={() => setCursorPosition({ line: lineIndex, column: columnIndex })}
+                onMouseLeave={() => !isSelecting && setCursorPosition({ line: null, column: null })}
+                onMouseDown={(e) => {
+                    e.preventDefault();
+                    setIsSelecting(true);
+                    setSelectionStart({ line: lineIndex, column: columnIndex });
+                    setSelectionEnd({ line: lineIndex, column: columnIndex });
+                }}
+                onMouseUp={() => {
+                    setIsSelecting(false);
+                }}
+                onMouseMove={() => {
+                    if (isSelecting) {
+                        setSelectionEnd({ line: lineIndex, column: columnIndex });
+                    }
+                }}
             >
                 {base}
             </span>
@@ -71,8 +135,8 @@ const DnaVisualizer = () => {
             <div className="relative">
                 {lines.map((line, lineIndex) => (
                     <div key={lineIndex} className="whitespace-pre font-mono">
-                        {line.split('').map((base, baseIndex) =>
-                            renderBase(base, `${lineIndex}-${baseIndex}`)
+                        {line.split('').map((base, columnIndex) =>
+                            renderBase(base, lineIndex, columnIndex)
                         )}
                     </div>
                 ))}
@@ -88,6 +152,16 @@ const DnaVisualizer = () => {
         setSequence(e.target.value);
     };
 
+    // Handle mouse up event on window
+    React.useEffect(() => {
+        const handleMouseUp = () => {
+            setIsSelecting(false);
+        };
+
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => window.removeEventListener('mouseup', handleMouseUp);
+    }, []);
+
     return (
         <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
             <div className="mb-6">
@@ -96,24 +170,53 @@ const DnaVisualizer = () => {
                     <h1 className="text-2xl font-bold">DNA Colorizer</h1>
                 </div>
                 <p className="text-gray-600">
-                    Paste your DNA sequence below. The Colorizer supports multiline sequences and will display position markers.
-                    Unknown bases (N) are also supported.
+                    Paste your DNA sequence below. Hover over bases to see their position.
+                    Click and drag to select multiple bases.
                 </p>
             </div>
 
             <div className="space-y-4">
                 <Legend />
-                <div className="w-full">
+                <div className="w-full space-y-2">
                     <textarea
                         value={sequence}
                         onChange={handleSequenceChange}
                         className="w-full h-32 p-2 font-mono border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Enter DNA sequence..."
                     />
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setSequence('')}
+                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
+                        >
+                            Clear
+                        </button>
+                        <button
+                            onClick={() => {
+                                const currentSequences = sequence.split('\n');
+                                setSequence([...currentSequences, ...currentSequences].join('\n'));
+                            }}
+                            className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors"
+                        >
+                            Replicate Sequence
+                        </button>
+                    </div>
                 </div>
                 <div className="bg-gray-50 p-4 rounded overflow-x-auto">
                     <div className="min-w-fit">
                         {renderSequence()}
+                    </div>
+                    <div className="mt-2 h-12 text-sm text-gray-600">
+                        <div className="h-6">
+                            {cursorPosition.line !== null && (
+                                <span>Position: Line {cursorPosition.line + 1}, Column {cursorPosition.column + 1}</span>
+                            )}
+                        </div>
+                        <div className="h-6">
+                            {selectionStart && selectionEnd && (
+                                <span>Selected bases: {getSelectedBasesCount()}</span>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
