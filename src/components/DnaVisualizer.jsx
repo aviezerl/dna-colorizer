@@ -152,6 +152,37 @@ const DnaVisualizer = () => {
         setSequence(e.target.value);
     };
 
+    // Function to get the complement of a DNA base
+    const getComplement = (base) => {
+        const complements = {
+            'A': 'T',
+            'T': 'A',
+            'G': 'C',
+            'C': 'G',
+            'N': 'N',
+            'a': 't',
+            't': 'a',
+            'g': 'c',
+            'c': 'g',
+            'n': 'n'
+        };
+        return complements[base] || base;
+    };
+
+    // Function to get reverse complement of the sequence
+    const getReverseComplement = () => {
+        return sequence
+            .split('\n')
+            .map(line =>
+                line
+                    .split('')
+                    .reverse()
+                    .map(base => getComplement(base))
+                    .join('')
+            )
+            .join('\n');
+    };
+
     // Handle mouse up event on window
     React.useEffect(() => {
         const handleMouseUp = () => {
@@ -199,6 +230,24 @@ const DnaVisualizer = () => {
                             className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors"
                         >
                             Replicate Sequence
+                        </button>
+                        <button
+                            onClick={() => setSequence(getReverseComplement())}
+                            className="px-3 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded transition-colors"
+                        >
+                            Reverse Complement
+                        </button>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    await navigator.clipboard.writeText(sequence);
+                                } catch (err) {
+                                    console.error('Failed to copy sequence:', err);
+                                }
+                            }}
+                            className="px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded transition-colors"
+                        >
+                            Copy
                         </button>
                     </div>
                 </div>
