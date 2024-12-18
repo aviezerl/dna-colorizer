@@ -7,7 +7,7 @@ const DnaVisualizer = () => {
     const [selectionStart, setSelectionStart] = useState(null);
     const [selectionEnd, setSelectionEnd] = useState(null);
     const [isSelecting, setIsSelecting] = useState(false);
-    const [colorMode, setColorMode] = useState('text'); // 'text' or 'background'
+    const [colorMode, setColorMode] = useState('background'); // 'text' or 'background'
 
     // Color mapping for each base
     const baseColors = {
