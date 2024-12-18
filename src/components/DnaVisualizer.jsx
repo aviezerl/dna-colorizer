@@ -183,6 +183,19 @@ const DnaVisualizer = () => {
             .join('\n');
     };
 
+    // Function to reverse the sequence without complementing
+    const getReverse = () => {
+        return sequence
+            .split('\n')
+            .map(line =>
+                line
+                    .split('')
+                    .reverse()
+                    .join('')
+            )
+            .join('\n');
+    };
+
     // Handle mouse up event on window
     React.useEffect(() => {
         const handleMouseUp = () => {
@@ -230,6 +243,12 @@ const DnaVisualizer = () => {
                             className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors"
                         >
                             Replicate Sequence
+                        </button>
+                        <button
+                            onClick={() => setSequence(getReverse())}
+                            className="px-3 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded transition-colors"
+                        >
+                            Reverse
                         </button>
                         <button
                             onClick={() => setSequence(getReverseComplement())}
