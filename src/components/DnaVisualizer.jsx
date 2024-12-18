@@ -7,14 +7,15 @@ const DnaVisualizer = () => {
     const [selectionStart, setSelectionStart] = useState(null);
     const [selectionEnd, setSelectionEnd] = useState(null);
     const [isSelecting, setIsSelecting] = useState(false);
+    const [colorMode, setColorMode] = useState('text'); // 'text' or 'background'
 
     // Color mapping for each base
     const baseColors = {
-        'A': '#32CD32', // Lime green
-        'T': '#FF6B6B', // Red
-        'G': '#FFD700', // Gold
-        'C': '#4169E1', // Royal blue
-        'N': '#808080', // Gray
+        'A': colorMode === 'text' ? '#32CD32' : '#90EE90', // Lime green
+        'T': colorMode === 'text' ? '#FF6B6B' : '#FFB6B6', // Light red
+        'G': colorMode === 'text' ? '#FFD700' : '#FFEB9C', // Light gold
+        'C': colorMode === 'text' ? '#4169E1' : '#B6C4FF', // Light blue
+        'N': colorMode === 'text' ? '#808080' : '#D3D3D3', // Light gray
     };
 
     // Function to calculate the absolute position in the sequence
@@ -53,12 +54,26 @@ const DnaVisualizer = () => {
         <div className="flex flex-wrap gap-4 mb-4">
             {Object.entries(baseColors).map(([base, color]) => (
                 <div key={base} className="flex items-center gap-1">
-                    <span style={{ color }} className="font-mono font-bold">{base}</span>
+                    <span
+                        style={colorMode === 'text' ? { color } : { backgroundColor: color, color: 'black', padding: '0 4px', borderRadius: '2px' }}
+                        className="font-mono font-bold"
+                    >
+                        {base}
+                    </span>
                     <span className="text-sm text-gray-600">
                         {base === 'N' ? '(Unknown)' : `(${base === 'A' ? 'Adenine' : base === 'T' ? 'Thymine' : base === 'G' ? 'Guanine' : 'Cytosine'})`}
                     </span>
                 </div>
             ))}
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Color mode:</span>
+                <button
+                    onClick={() => setColorMode(prev => prev === 'text' ? 'background' : 'text')}
+                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors text-sm"
+                >
+                    {colorMode === 'text' ? 'Text' : 'Background'}
+                </button>
+            </div>
         </div>
     );
 
@@ -93,12 +108,21 @@ const DnaVisualizer = () => {
             <span
                 key={`${lineIndex}-${columnIndex}`}
                 style={{
-                    color,
-                    background: `linear-gradient(${selected ? 'rgba(0, 0, 0, 0.2)' :
-                        isHighlighted ? 'rgba(0, 0, 0, 0.1)' :
-                            'transparent'} 45%, transparent 45%, transparent 55%, ${selected ? 'rgba(0, 0, 0, 0.2)' :
+                    ...(colorMode === 'text'
+                        ? {
+                            color,
+                            background: `linear-gradient(${selected ? 'rgba(0, 0, 0, 0.2)' :
                                 isHighlighted ? 'rgba(0, 0, 0, 0.1)' :
-                                    'transparent'} 55%)`,
+                                    'transparent'} 45%, transparent 45%, transparent 55%, ${selected ? 'rgba(0, 0, 0, 0.2)' :
+                                        isHighlighted ? 'rgba(0, 0, 0, 0.1)' :
+                                            'transparent'} 55%)`
+                        }
+                        : {
+                            backgroundColor: color,
+                            color: 'black',
+                            filter: selected ? 'brightness(0.9)' : isHighlighted ? 'brightness(0.95)' : 'none'
+                        }),
+                    padding: colorMode === 'background' ? '0 2px' : '0 1px',
                     padding: '0 1px',
                     cursor: 'pointer',
                     userSelect: 'none'
@@ -245,16 +269,16 @@ const DnaVisualizer = () => {
                             Replicate Sequence
                         </button>
                         <button
-                            onClick={() => setSequence(getReverse())}
-                            className="px-3 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded transition-colors"
-                        >
-                            Reverse
-                        </button>
-                        <button
                             onClick={() => setSequence(getReverseComplement())}
                             className="px-3 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded transition-colors"
                         >
                             Reverse Complement
+                        </button>
+                        <button
+                            onClick={() => setSequence(getReverse())}
+                            className="px-3 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded transition-colors"
+                        >
+                            Reverse
                         </button>
                         <button
                             onClick={async () => {
