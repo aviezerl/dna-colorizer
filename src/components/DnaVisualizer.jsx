@@ -18,6 +18,16 @@ const DnaVisualizer = () => {
         'N': colorMode === 'text' ? '#808080' : '#D3D3D3', // Light gray
     };
 
+    // Function to get color for a base, returning white background for unknown bases in background mode
+    const getBaseColor = (base) => {
+        const upperBase = base.toUpperCase();
+        if (colorMode === 'text') {
+            return baseColors[upperBase] || '#000000';
+        } else {
+            return baseColors[upperBase] || '#FFFFFF'; // White background for unknown bases
+        }
+    };
+
     // Function to calculate the absolute position in the sequence
     const getAbsolutePosition = (lineIndex, columnIndex) => {
         const lines = sequence.split('\n');
@@ -100,7 +110,7 @@ const DnaVisualizer = () => {
 
     // Function to render a single base with its color
     const renderBase = (base, lineIndex, columnIndex) => {
-        const color = baseColors[base.toUpperCase()] || '#000000';
+        const color = getBaseColor(base);
         const isHighlighted = lineIndex === cursorPosition.line && columnIndex === cursorPosition.column;
         const selected = isPositionSelected(lineIndex, columnIndex);
 
